@@ -3,7 +3,7 @@
 from unittest import TestCase
 from unittest import main as unittest_main
 
-from pydoo import OdooConnector
+from pydoo.core import OdooConnector
 
 
 class TestOdooConnector(TestCase):
@@ -44,6 +44,29 @@ class TestOdooConnector(TestCase):
                                                 attributes=['string', 'help',
                                                             'type'])
         print ret
+
+    def test_create_update_delete_partner(self):
+        partner_id = self.connector.create_record("res.partner",
+                                                  name="New partner",
+                                                  type="contact")
+        print "created partner with id: {}".format(partner_id)
+        ret = self.connector.read_records("res.partner",
+                                          ['id', '=', partner_id],
+                                          fields=["name"])
+        print "check name from db: {}".format(str(ret))
+        ret = self.connector.update_record("res.partner", partner_id,
+                                           name="New Partner 2")
+        print "updated partner {} with new name".format(partner_id)
+        ret = self.connector.read_records("res.partner",
+                                          ['id', '=', partner_id],
+                                          fields=["name"])
+        print "check name from db: {}".format(str(ret))
+        ret = self.connector.delete_record("res.partner", partner_id)
+        print "removed partner with id {}".format(partner_id)
+        ret = self.connector.read_records("res.partner",
+                                          ['id', '=', partner_id],
+                                          fields=["name"])
+        print "check name from db: {}".format(str(ret))
 
 
 if __name__ == '__main__':

@@ -52,6 +52,8 @@ class OdooConnector(object):
     def _execute_kw(self, model, method, *args, **kwargs):
         if not self._is_logged.is_set():
             self.login()
+            print list(args)
+            print kwargs
         return self._models.execute_kw(self._db, self.uid, self._password,
                                        model, method, list(args), kwargs)
 
@@ -67,7 +69,7 @@ class OdooConnector(object):
         :param args: list of domain filter
         (https://www.odoo.com/documentation/9.0/reference/orm.html#reference
         -orm-domains)
-        :return: database id of all records matching the filter
+        :return: database ids of all records matching the filter
         """
         return self._execute_kw(model, "search", list(args), **kwargs)
 
@@ -81,16 +83,16 @@ class OdooConnector(object):
         return self._execute_kw(model, "search_read", list(args), **kwargs)
 
     def list_record_fields(self, model, *args, **kwargs):
-        return self._execute_kw(model, "fields_get", list(args), **kwargs)
+        return self._execute_kw(model, "fields_get", *args, **kwargs)
 
     def create_record(self, model, **values):
-        return self._execute_kw(model, "create", [values])
+        return self._execute_kw(model, "create", values)
 
     def update_record(self, model, *ids, **values):
-        return self._execute_kw(model, "write", [list(ids), values])
+        return self._execute_kw(model, "write", list(ids), values)
 
     def get_record_names(self, model, *ids):
-        return self._execute_kw(model, "name_get", [list(ids)])
+        return self._execute_kw(model, "name_get", list(ids))
 
     def delete_record(self, model, *ids):
-        return self._execute_kw(model, "unlink", [list(ids)])
+        return self._execute_kw(model, "unlink", list(ids))
