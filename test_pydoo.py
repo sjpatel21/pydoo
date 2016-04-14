@@ -1,16 +1,19 @@
 # -*- coding: utf-8 -*-
 
+import pprint
 from unittest import TestCase
 from unittest import main as unittest_main
 
-from pydoo.core import OdooConnector
+from pydoo.core import OdooXmlRpc
+
+pp = pprint.PrettyPrinter(indent=4)
 
 
 class TestOdooConnector(TestCase):
     def setUp(self):
-        self.connector = OdooConnector(url="http://10.0.3.21:8069",
-                                       db="dealclub_test_db",
-                                       username="admin", password="admin")
+        self.connector = OdooXmlRpc(url="http://10.0.3.21:8069",
+                                    db="dealclub_test_db",
+                                    username="admin", password="admin")
 
     def test_login(self):
         self.connector.login()
@@ -35,22 +38,14 @@ class TestOdooConnector(TestCase):
         print "results of search method with pagination: " + str(ret)
 
     def test_read_records(self):
-        ret = self.connector.read_records('sale.order',
-                                          ['id', '=', 23])
-        # print type(ret)
-        # print(ret)
-        order_line_id = ret[0].get('order_line')
-        ret = self.connector.read_records('sale.order.line',
-                                          ['id', '=', order_line_id])
-        print ret[0].get('tax_id')
-        ret = self.connector.update_record('sale.order.line', ret[0].get("id"),
-                                           tax_id=[(4, 11, 0)])
-        print ret
+        ret = self.connector.read_records('product.template',
+                                          ['default_code', '=', 10167220])
+        pp.pprint(ret[0].get('id'))
 
     def test_fields_get(self):
-        ret = self.connector.list_record_fields("res.partner",
-                                                attributes=['string', 'help',
-                                                            'type'])
+        ret = self.connector.get_record_fields("res.partner",
+                                               attributes=['string', 'help',
+                                                           'type'])
         print ret
 
     def test_create_update_delete_partner(self):
@@ -80,8 +75,6 @@ class TestOdooConnector(TestCase):
         ret = self.connector.list_record_fields("product.template",
                                                 attributes=['string', 'help',
                                                             'type'])
-        import pprint
-        pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(ret)
 
     def test_create_order(self):
