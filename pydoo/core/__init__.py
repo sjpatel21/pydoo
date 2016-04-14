@@ -1,3 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from .odoo_connector import OdooConnector
+from .connections_queue import ConnectionsQueue
+from .odoo_xmlrpc import OdooXmlRpc
+from .operator import Operator
