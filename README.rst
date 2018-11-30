@@ -2,6 +2,4 @@ pydoo: sdk for odoo xmlrpc api
 ==============================
 
 
-.. image:: https://travis-ci.org/julivico/pydoo.svg?branch=master
-    :target: https://travis-ci.org/julivico/pydoo
-    
+[![build status](https://gitlab.com/gitlab-org/gitlab-ce/badges/master/build.svg)](https://gitlab.com/julivico/pydoo/commits/master)
