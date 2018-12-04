@@ -3,9 +3,17 @@
 XmlRpc API Client for Odoo 8, 9 (not tested for odoo 10)
 
 """
-import xmlrpclib
-from socket import error as SocketError
+
 import ssl
+from socket import error as SocketError
+from threading import RLock
+
+try:
+    import xmlrpclib as xmlrpc_client
+except ImportError:
+    from xmlrpc import client as xmlrpc_client
+
+_Null = object()
 
 
 class AuthException(Exception):
@@ -14,15 +22,35 @@ class AuthException(Exception):
     pass
 
 
-class OdooXmlRpc(object):
+"""
+class ConnectionPool(object):
+    def __init__(self, maxsize=5, timeout=0, odoo):
+        super(ConnectionPool, self).__init__()
+        self._maxsize = maxsize
+        self._timeout = timeout
+        self._connections = Queue(maxsize=maxsize)
+        self.lock = RLock()
+
+    def get(self):
+        with self.lock:
+            if self._connections.qsize() < self._maxsize:
+                connection = Connection(url, db, username, password, transport=None, encoding=None, verbose=0,
+                                        allow_none=0,
+                                        use_datetime=False, context=None, use_ssl=False)
+                self._connections.put(connection)
+            connection = self._connections.get(timeout=self._timeout)
+            self._connections.put(connection)
+"""
+
+
+class Connection(object):
     """ Connect with odoo over XML-RPC protocol
 
     """
 
-    def __init__(self, url, db, username, password, transport=None, encoding=None, verbose=0, allow_none=0,
-                 use_datetime=0, context=None, use_ssl=False):
+    def __init__(self, odoo):
         """
-
+        Init
         :param str url: URL of Odoo Server
         :param str db: data base name
         :param str username: login username
@@ -36,26 +64,25 @@ class OdooXmlRpc(object):
         :param use_ssl: Use SSL connection or not
         :type use_ssl: bool
         """
+        super(Connection, self).__init__()
 
-        if "http" not in url:
-            raise ValueError("URL must contain http or https")
-        if url[-1] == '/':
-            url = url[:-1]
-        else:
-            url = url
+        # Check url
+        self._url = self.check_url(odoo.url)
 
-        if use_ssl:
+        # SSL connection
+        if odoo.use_ssl:
             context = ssl._create_unverified_context()
 
+        # key words arguments for ServerProxy
+        kwargs = {'transport': odoo.transport, 'encoding': odoo.encoding, 'verbose': odoo.verbose,
+                  'allow_none': odoo.allow_none, 'use_datetime': odoo.use_datetime, 'context': odoo.context}
+
+        # create proxies
         try:
-            self._common = xmlrpclib.ServerProxy("{}/xmlrpc/2/common".format(url), transport=transport,
-                                                 encoding=encoding, verbose=verbose, allow_none=allow_none,
-                                                 use_datetime=use_datetime, context=context)
-            self._models = xmlrpclib.ServerProxy('{}/xmlrpc/2/object'.format(url), transport=transport,
-                                                 encoding=encoding, verbose=verbose, allow_none=allow_none,
-                                                 use_datetime=use_datetime, context=context)
-            self._report = xmlrpclib.ServerProxy('{}/xmlrpc/2/report'.format(url))
-        except xmlrpclib.ProtocolError:
+            self._common = xmlrpc_client.ServerProxy("{}/xmlrpc/2/common".format(self._url), **kwargs)
+            self._models = xmlrpc_client.ServerProxy('{}/xmlrpc/2/object'.format(self._url), **kwargs)
+            self._report = xmlrpc_client.ServerProxy('{}/xmlrpc/2/report'.format(self._url))
+        except xmlrpc_client.ProtocolError:
             # false url
             raise
         except SocketError:
@@ -63,10 +90,29 @@ class OdooXmlRpc(object):
             # Internet problem
             raise
 
-        self._db = db
-        self._username = username
-        self._password = password
+        self._db = odoo.db
+        self._username = odoo.username
+        self._password = odoo.password
         self._uid = None
+        self.lock = RLock()
+
+    @staticmethod
+    def check_url(url):
+        """
+        check URL
+        :param url: URL to check
+        :return: corrected URL
+        """
+        if "http" not in url:
+            raise ValueError("URL must contain http or https")
+        if url[-1] == '/':
+            url = url[:-1]
+        else:
+            url = url
+        return url
+
+    def is_locked(self):
+        return self._locked
 
     @property
     def is_logged(self):
@@ -91,19 +137,21 @@ class OdooXmlRpc(object):
         """
             Login to get uid (use saved username and password)
         """
-        try:
-            self._uid = self._common.authenticate(self._db, self._username, self._password, {})
-        except SocketError:
-            # Error: Odoo server unavailable
-            # Internet problem
-            raise
-        except Exception:
-            # Database not exist
-            # Username not exist
-            # Password false
-            raise
-        if not self.is_logged:
-            raise AuthException("Username or password wrong")
+        with self.lock:
+            try:
+                login_method = getattr(self._common, 'authenticate', 'login')
+                self._uid = login_method(self._db, self._username, self._password, {})
+            except SocketError:
+                # Error: Odoo server unavailable
+                # Internet problem
+                raise
+            except Exception:
+                # Database not exist
+                # Username not exist
+                # Password false
+                raise
+            if not self.is_logged:
+                raise AuthException("Username or password wrong")
 
     def _execute_kw(self, model, method, args, kwargs):
         """ execute a method on a model
@@ -128,7 +176,8 @@ class OdooXmlRpc(object):
         :param kwargs:
         :return:
         """
-        return self._execute_kw(model, method, list(args), kwargs)
+        with self.lock:
+            return self._execute_kw(model, method, list(args), kwargs)
 
     def search(self, model_name, search_domain=None, offset=0, limit=None, order=None):
         """ search() takes a mandatory domain filter (possibly empty), and returns the database identifiers of all
@@ -181,7 +230,7 @@ class OdooXmlRpc(object):
             fields = []
         return self.execute_kw(model_name, "read", ids, fields=fields)
 
-    def fields_get(self, model_name, fields=None, string=False, help=False, type_=False):
+    def fields_get(self, model_name, fields=None, attributes=None):
         """ Return the definition of each field.
 
         The _inherits'd fields are included. The string, help, and selection (if present) attributes are translated.
@@ -202,14 +251,9 @@ class OdooXmlRpc(object):
         """
         if fields is None:
             fields = []
-        attrs = []
-        if string:
-            attrs.append('string')
-        if help:
-            attrs.append('help')
-        if type_:
-            attrs.append('type')
-        return self.execute_kw(model_name, "fields_get", fields, attributes=attrs)
+        if attributes is None:
+            attributes = ['string', 'help', 'type']
+        return self.execute_kw(model_name, "fields_get", fields, attributes=attributes)
 
     def search_read(self, model_name, search_domain=None, offset=0, limit=None, order=None, fields=None):
         """ search() takes a mandatory domain filter (possibly empty), and returns the database identifiers of all
@@ -252,7 +296,7 @@ class OdooXmlRpc(object):
         """
 
         # TODO: test if this method can create more than 1 record
-        return self.execute_kw(model_name, "create", [kwargs])
+        return self.execute_kw(model_name, "create", kwargs)
 
     def write(self, model_name, *ids, **vals):
         """ Records can be updated using write(), it takes a list of records to update and a mapping of updated fields

@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
 
-from .core import OdooXmlRpc
 from .models import Environment
 
 
 class Odoo(object):
     def __init__(self, url, db, username, password, transport=None, encoding=None, verbose=0, allow_none=0,
-                 use_datetime=0, context=None):
+                 use_datetime=0, context=None, use_ssl=False):
         """
 
         :param url:
@@ -21,19 +20,18 @@ class Odoo(object):
         :param use_datetime:
         :param context:
         """
-        xmlrpc = OdooXmlRpc(url, db, username, password, transport=transport, encoding=encoding, verbose=verbose,
-                            allow_none=allow_none, use_datetime=use_datetime, context=context)
-        self._models = {}
-        self._env = Environment(xmlrpc)
-
-    @property
-    def xmlrpc(self):
-        """
-
-        :return:
-        :rtype: OdooXmlRpc
-        """
-        return self._env.xmlrpc
+        self.url = url
+        self.db = db
+        self.username = username
+        self.password = password
+        self.transport = transport
+        self.encoding = encoding
+        self.verbose = verbose
+        self.allow_none = allow_none
+        self.use_datetime = use_datetime
+        self.context = context
+        self.use_ssl = use_ssl
+        self._env = Environment(self)
 
     @property
     def env(self):

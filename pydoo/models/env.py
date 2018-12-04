@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 
 from .model import Model
+from ..core import Connection
 
 
 class Environment(object):
-    def __init__(self, xmlrpc):
+    def __init__(self, odoo):
         super(Environment, self).__init__()
         self._queue = {}
-        self._xmlrpc = xmlrpc
+        self._odoo = odoo
+        self.conn = Connection(odoo)
 
     @property
-    def xmlrpc(self):
-        return self._xmlrpc
+    def odoo(self):
+        return self._odoo
 
     def __getitem__(self, name):
-        return self._queue.setdefault(name, Model(name, self._xmlrpc))
+        return self._queue.setdefault(name, Model(name, self.conn))

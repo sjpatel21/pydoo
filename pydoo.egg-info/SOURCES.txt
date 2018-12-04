@@ -18,4 +18,12 @@ pydoo/models/domain.py
 pydoo/models/env.py
 pydoo/models/field.py
 pydoo/models/model.py
+pydoo/models/odoo_model.py
+pydoo/models/order.py
+pydoo/models/product.py
+pydoo/models/purchase.py
 pydoo/models/row.py
+pydoo/models/stock_move.py
+pydoo/models/stock_operation.py
+pydoo/models/stock_picking.py
+pydoo/utils/__init__.py
