@@ -11,10 +11,10 @@ pp = pprint.PrettyPrinter(indent=4)
 
 class TestOdooConnector(TestCase):
     def setUp(self):
-        self.odoo = Odoo(url="https://office.partenics.de",
+        self.odoo = Odoo(url="https://x.x.x.x",
                          db="test_product_relation",
                          username="admin",
-                         password="nmQd&5VD5P?!eLuB<djU",
+                         password="xxx",
                          use_ssl=True)
 
     def test_search_method(self):
