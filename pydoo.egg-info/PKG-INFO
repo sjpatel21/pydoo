@@ -1,0 +1,26 @@
+Metadata-Version: 1.1
+Name: pydoo
+Version: 0.2.0
+Summary: High level library for Odoo XMLRPC API
+Home-page: https://github.com/julivico/pydoo
+Author: Viet Pham
+Author-email: dev@qvpham.de
+License: UNKNOWN
+Download-URL: https://github.com/julivico/pydoo/archive/master.zip
+Description: UNKNOWN
+Keywords: python odoo xmlrpc
+Platform: UNKNOWN
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
+Classifier: Natural Language :: English
+Classifier: License :: OSI Approved :: Apache Software License
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 2.7
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.3
+Classifier: Programming Language :: Python :: 3.4
+Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: Implementation :: CPython
+Classifier: Programming Language :: Python :: Implementation :: PyPy

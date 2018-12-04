@@ -1,0 +1,2 @@
+include pydoo/models/*
+include pydoo/code/*
